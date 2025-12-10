@@ -3,12 +3,15 @@ name = "trading-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
+    "arize-phoenix>=12.22.0",
     "ccxt>=4.5.26",
     "dotenv>=0.9.9",
     "llama-index>=0.14.10",
+    "llama-index-callbacks-arize-phoenix>=0.6.1",
     "llama-index-multi-modal-llms-openai>=0.6.2",
+    "llama-index-utils-workflow>=0.5.1",
     "mplfinance>=0.12.10b0",
     "python-dotenv>=1.0.0",
 ]

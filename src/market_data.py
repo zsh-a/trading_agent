@@ -6,11 +6,13 @@ from datetime import datetime
 from typing import Optional, Dict
 
 class MarketDataProvider:
-    def __init__(self, exchange_id: str, symbol: str, timeframe: str = '1h', limit: int = 100):
+    def __init__(self, exchange_id: str, symbol: str, timeframe: str = '1h', limit: int = 100, use_mock: bool = False, mock_data_path: str = "data/mock_data.csv"):
         self.exchange_id = exchange_id
         self.symbol = symbol
         self.timeframe = timeframe
         self.limit = limit
+        self.use_mock = use_mock
+        self.mock_data_path = mock_data_path
         
         # Initialize exchange
         exchange_class = getattr(ccxt, exchange_id)
@@ -23,9 +25,18 @@ class MarketDataProvider:
             self.exchange.set_sandbox_mode(True)
 
     def fetch_ohlcv(self) -> pd.DataFrame:
-        """Fetch OHLCV data from the exchange."""
-        ohlcv = self.exchange.fetch_ohlcv(self.symbol, self.timeframe, limit=self.limit)
-        df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        """Fetch OHLCV data from the exchange or mock file."""
+        if self.use_mock:
+            print(f"Using mock data from {self.mock_data_path}")
+            if not os.path.exists(self.mock_data_path):
+                 raise FileNotFoundError(f"Mock data file not found: {self.mock_data_path}")
+            df = pd.read_csv(self.mock_data_path)
+            # Ensure timestamp is in correct format (ms)
+            pass 
+        else:
+            ohlcv = self.exchange.fetch_ohlcv(self.symbol, self.timeframe, limit=self.limit)
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        
         df = df.assign(timestamp=pd.to_datetime(df['timestamp'], unit='ms'))
         df.set_index('timestamp', inplace=True)
         return df
@@ -75,3 +86,12 @@ class MarketDataProvider:
             "timestamp": last_row.name.isoformat()
         }
         return summary
+
+    def get_current_price(self) -> float:
+        """Fetch the latest price."""
+        if self.use_mock:
+             df = self.fetch_ohlcv()
+             return float(df.iloc[-1]['close'])
+        else:
+             ticker = self.exchange.fetch_ticker(self.symbol)
+             return float(ticker['last'])
